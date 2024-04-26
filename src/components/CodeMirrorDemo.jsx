@@ -12,16 +12,40 @@ export default class CodeMirrorDemo extends Component {
 
   componentDidMount() {
     const code = require(`!raw-loader!./File`).default
-    const regex = /return([\s\S]*)}/
+    const regex = /return \(([\s\S]*)}/
+
     const match = code.match(regex)
     let extractedCode
     if (match && match.length > 1) {
       extractedCode = match[1].trim()
-      extractedCode = extractedCode.slice(0, extractedCode.length - 1) // 去除最后一个字符
+      extractedCode = extractedCode.slice(0, extractedCode.length - 10)
     }
-    this.setState({ code: extractedCode }, () => {
-      this.evalCode()
+    console.log(extractedCode)
+    this.setState({ code: '' }, () => {
+      this.typeWriter(extractedCode)
     })
+  }
+
+  typeWriter = text => {
+    if (this.typingStarted) {
+      return // 如果已经开始打字动画，则直接返回
+    }
+    this.typingStarted = true // 设置标志位表示打字动画已经开始
+    let currentIndex = 0
+    const typingInterval = 1 // 打字速度（每个字符的间隔时间）
+    const typingTimer = setInterval(() => {
+      if (currentIndex >= text.length) {
+        clearInterval(typingTimer)
+        try {
+          this.evalCode()
+        } catch (err) {}
+      } else {
+        this.setState(prevState => {
+          return { code: prevState.code + text[currentIndex - 1] }
+        })
+        currentIndex++
+      }
+    }, typingInterval)
   }
 
   evalCode = () => {
@@ -56,7 +80,7 @@ export default class CodeMirrorDemo extends Component {
           运行
         </button>
         <CodeMirror
-          style={{ width: '50%' }}
+          style={{ width: '50%', marginRight: '10px' }}
           value={code}
           theme={dracula}
           extensions={[javascript({ jsx: true })]}
@@ -73,7 +97,7 @@ export default class CodeMirrorDemo extends Component {
           }}
         />
         {/* <button onClick={this.handleCopy}>复制代码</button> */}
-        <div style={{ 'margin-left': '10px' }}>{codeComponent ? React.createElement(codeComponent) : null}</div>
+        <div>{codeComponent ? React.createElement(codeComponent) : null}</div>
       </div>
     )
   }
