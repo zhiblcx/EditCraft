@@ -2,6 +2,7 @@ import React, { Component } from 'react'
 import CodeMirror from '@uiw/react-codemirror'
 import { evalCode } from './tool'
 import { javascript } from '@codemirror/lang-javascript'
+import { EditorState } from '@codemirror/state'
 import { dracula } from '@uiw/codemirror-theme-dracula'
 
 export default class CodeMirrorDemo extends Component {
@@ -9,6 +10,10 @@ export default class CodeMirrorDemo extends Component {
     code: '',
     codeComponent: null
   }
+  typingStarted = false
+
+  range = [' p-8', ' rounded-full ', 'mx-auto', ' font-medium', 'font-medium', 'text-sky-500 dark:text-sky-400', 'text-slate-700 dark:text-slate-500', ' text-center', 'md:flex ', ' md:p-0', ' md:p-8', ' md:rounded-none', ' md:w-48', ' md:h-auto', ' md:text-left']
+  rangIndex = [1, 6, 7, 11, 12, 13, 14, 8, 0, 2, 9, 5, 3, 4, 10]
 
   componentDidMount() {
     const code = require(`!raw-loader!./File`).default
@@ -20,32 +25,54 @@ export default class CodeMirrorDemo extends Component {
       extractedCode = match[1].trim()
       extractedCode = extractedCode.slice(0, extractedCode.length - 10)
     }
-    console.log(extractedCode)
-    this.setState({ code: '' }, () => {
+    this.setState({ code: extractedCode.replace(/(\s*)@@@\s?/g, '') }, () => {
+      this.evalCode()
       this.typeWriter(extractedCode)
     })
   }
 
-  typeWriter = text => {
+  typeWriter = async text => {
     if (this.typingStarted) {
       return // 如果已经开始打字动画，则直接返回
     }
     this.typingStarted = true // 设置标志位表示打字动画已经开始
-    let currentIndex = 0
-    const typingInterval = 1 // 打字速度（每个字符的间隔时间）
-    const typingTimer = setInterval(() => {
-      if (currentIndex >= text.length) {
-        clearInterval(typingTimer)
-        try {
-          this.evalCode()
-        } catch (err) {}
-      } else {
-        this.setState(prevState => {
-          return { code: prevState.code + text[currentIndex - 1] }
-        })
-        currentIndex++
+    const insertClassIndex = []
+    for (let count = 0; count < this.range.length; count++) {
+      insertClassIndex.push(this.rangIndex[count])
+      let count2 = -1 // 声明count2变量
+      let newStr = text.replace(/\s?@@@\s?/g, () => {
+        count2++
+        const index = insertClassIndex.findIndex(item => item === count2)
+        if (index !== -1) {
+          return this.range[index]
+        } else {
+          return ''
+        }
+      })
+      console.log(newStr)
+      for (let i = 0; i < this.state.code.length; i++) {
+        if (this.state.code[i] !== newStr[i]) {
+          for (let j = i; j < i + this.range[count].length; j++) {
+            await new Promise(resolve => {
+              setTimeout(() => {
+                this.setState(prevState => {
+                  const firstPart = prevState.code.slice(0, j)
+                  const secondPart = prevState.code.slice(j)
+                  const updatedCode = firstPart + newStr[j] + secondPart
+                  return { code: updatedCode }
+                }, resolve) // 在setState的回调函数中调用resolve，表示更新完成
+              }, 100)
+            })
+            this.evalCode()
+          }
+          await new Promise(resolve => {
+            setTimeout(() => {
+              resolve()
+            }, 1000)
+          })
+        }
       }
-    }, typingInterval)
+    }
   }
 
   evalCode = () => {
@@ -76,15 +103,17 @@ export default class CodeMirrorDemo extends Component {
           position: 'relative'
         }}
       >
-        <button onClick={this.evalCode} style={{ position: 'absolute', right: 10, top: 0, zIndex: 999 }}>
-          运行
-        </button>
+        {/* <button onClick={this.evalCode}>运行</button> */}
+
+        {/* <button onClick={this.handleCopy}>复制代码</button> */}
+        <div>{codeComponent ? React.createElement(codeComponent) : null}</div>
         <CodeMirror
           style={{ width: '50%', marginRight: '10px' }}
           value={code}
           theme={dracula}
-          extensions={[javascript({ jsx: true })]}
+          extensions={[javascript({ jsx: true }), EditorState.readOnly.of(true)]}
           options={{
+            readOnly: true, // 直接禁止用户输入
             keyMap: 'sublime',
             mode: 'jsx',
             // 括号匹配
@@ -96,8 +125,6 @@ export default class CodeMirrorDemo extends Component {
             this.setState({ code: editor })
           }}
         />
-        {/* <button onClick={this.handleCopy}>复制代码</button> */}
-        <div>{codeComponent ? React.createElement(codeComponent) : null}</div>
       </div>
     )
   }
