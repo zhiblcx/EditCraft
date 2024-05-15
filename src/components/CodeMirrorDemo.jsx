@@ -201,7 +201,7 @@ export default function CodeMirrorDemo() {
                   >
                     <motion.p className={clsx('transition-colors duration-500', court >= 5 ? 'text-sky-500 dark:text-sky-400' : 'text-black dark:text-slate-300')}>Sarah Dayan</motion.p>
                     <motion.p initial={false} className={clsx('transition-colors duration-500', court >= 6 ? 'text-slate-700 dark:text-slate-500' : 'text-black dark:text-slate-300')}>
-                      Staff Engineer, Algolia {court}
+                      Staff Engineer, Algolia
                     </motion.p>
                   </motion.div>
                 </motion.div>
