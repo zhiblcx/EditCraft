@@ -156,7 +156,7 @@ export default function CodeMirrorDemo() {
                   <motion.img
                     transition={{ duration: 0.5 }}
                     className={clsx('w-24 h-24')}
-                    src="http://localhost:3000/wolf.jpg"
+                    src={require('../images/wolf.jpg')}
                     decoding="async"
                     animate={{
                       ...(court >= 2 && court <= 7 ? { x: 110, y: 0 } : { x: 0, y: 0 }),
