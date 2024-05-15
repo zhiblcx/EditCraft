@@ -1,88 +1,116 @@
-import React, { Component } from 'react'
+import React, { useEffect, useState } from 'react'
 import CodeMirror from '@uiw/react-codemirror'
-import { evalCode } from './tool'
+import clsx from 'clsx'
 import { javascript } from '@codemirror/lang-javascript'
 import { EditorState } from '@codemirror/state'
 import { dracula } from '@uiw/codemirror-theme-dracula'
+import { motion, AnimatePresence } from 'framer-motion'
 
-export default class CodeMirrorDemo extends Component {
-  state = {
-    code: '',
-    codeComponent: null
-  }
-  typingStarted = false
+export function Hero({ left, right }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        height: '100%',
+        position: 'relative'
+      }}
+    >
+      <div style={{ width: '50%', transform: 'translateX(-50px)', zIndex: 10 }}>{left}</div>
+      {right}
+    </div>
+  )
+}
 
-  range = [' p-8', ' rounded-full ', 'mx-auto', ' font-medium', 'font-medium', 'text-sky-500 dark:text-sky-400', 'text-slate-700 dark:text-slate-500', ' text-center', 'md:flex ', ' md:p-0', ' md:p-8', ' md:rounded-none', ' md:w-48', ' md:h-auto', ' md:text-left']
-  rangIndex = [1, 6, 7, 11, 12, 13, 14, 8, 0, 2, 9, 5, 3, 4, 10]
+export default function CodeMirrorDemo() {
+  const [code, setCode] = useState('')
+  const [court, setCourt] = useState(-1)
+  const [typingStarted, setTypingStarted] = useState(false)
+  const [extend, setExtend] = useState(false)
 
-  componentDidMount() {
-    const code = require(`!raw-loader!./File`).default
+  const range = [' p-8', ' rounded-full ', 'mx-auto', ' font-medium', 'font-medium', 'text-sky-500 dark:text-sky-400', 'text-slate-700 dark:text-slate-500', ' text-center', 'md:flex ', ' md:p-0', ' md:p-8', ' md:rounded-none', ' md:w-48', ' md:h-auto', ' md:text-left']
+
+  const rangIndex = [1, 6, 7, 11, 12, 13, 14, 8, 0, 2, 9, 5, 3, 4, 10]
+
+  useEffect(() => {
+    const code1 = require(`!raw-loader!./File`).default
     const regex = /return \(([\s\S]*)}/
-
-    const match = code.match(regex)
+    const match = code1.match(regex)
     let extractedCode
     if (match && match.length > 1) {
       extractedCode = match[1].trim()
       extractedCode = extractedCode.slice(0, extractedCode.length - 10)
     }
-    this.setState({ code: extractedCode.replace(/(\s*)@@@\s?/g, '') }, () => {
-      this.evalCode()
-      this.typeWriter(extractedCode)
-    })
-  }
+    setCode(extractedCode.replace(/(\s*)@@@\s?/g, ''))
+  }, [])
 
-  typeWriter = async text => {
-    if (this.typingStarted) {
-      return // 如果已经开始打字动画，则直接返回
+  useEffect(() => {
+    const code1 = require(`!raw-loader!./File`).default
+    const regex = /return \(([\s\S]*)}/
+    const match = code1.match(regex)
+    let extractedCode
+    if (match && match.length > 1) {
+      extractedCode = match[1].trim()
+      extractedCode = extractedCode.slice(0, extractedCode.length - 10)
     }
-    this.typingStarted = true // 设置标志位表示打字动画已经开始
+    typeWriter(extractedCode)
+  }, [code])
+
+  const typeWriter = async text => {
+    let str = ''
+    str = code
+    if (typingStarted || code == '') {
+      return
+    }
+    setTypingStarted(true)
     const insertClassIndex = []
-    for (let count = 0; count < this.range.length; count++) {
-      insertClassIndex.push(this.rangIndex[count])
-      let count2 = -1 // 声明count2变量
+    for (let count = 0; count < range.length; count++) {
+      console.log(count)
+      insertClassIndex.push(rangIndex[count])
+      let count2 = -1
       let newStr = text.replace(/\s?@@@\s?/g, () => {
         count2++
         const index = insertClassIndex.findIndex(item => item === count2)
         if (index !== -1) {
-          return this.range[index]
+          return range[index]
         } else {
           return ''
         }
       })
-      console.log(newStr)
-      for (let i = 0; i < this.state.code.length; i++) {
-        if (this.state.code[i] !== newStr[i]) {
-          for (let j = i; j < i + this.range[count].length; j++) {
+      for (let i = 0; i < str.length; i++) {
+        if (str[i] !== newStr[i]) {
+          for (let j = i; j < i + range[count].length; j++) {
             await new Promise(resolve => {
               setTimeout(() => {
-                this.setState(prevState => {
-                  const firstPart = prevState.code.slice(0, j)
-                  const secondPart = prevState.code.slice(j)
+                setCode(prevState => {
+                  const firstPart = prevState.slice(0, j)
+                  const secondPart = prevState.slice(j)
                   const updatedCode = firstPart + newStr[j] + secondPart
-                  return { code: updatedCode }
-                }, resolve) // 在setState的回调函数中调用resolve，表示更新完成
-              }, 100)
+                  return updatedCode
+                })
+                resolve()
+              }, 80)
             })
-            this.evalCode()
           }
+          str = newStr
+          setCourt(count)
           await new Promise(resolve => {
+            let timer = 1000
             setTimeout(() => {
+              if (count === 7) {
+                setExtend(true)
+                timer = 2000
+              }
               resolve()
-            }, 1000)
+            }, timer)
           })
+
+          break
         }
       }
     }
   }
 
-  evalCode = () => {
-    const { code } = this.state
-    this.setState({ codeComponent: evalCode(require(`!raw-loader!./File`).default.replace(/render\(\) {[\s\S]*}/, `render() {\n return <div> ${code}</div> }}`)) })
-  }
-
-  handleCopy = () => {
-    const { code } = this.state
-    // 复制代码到剪贴板
+  const handleCopy = () => {
     navigator.clipboard
       .writeText(code)
       .then(() => {
@@ -93,20 +121,96 @@ export default class CodeMirrorDemo extends Component {
       })
   }
 
-  render() {
-    const { code, codeComponent } = this.state
-    return (
-      <div
-        style={{
-          display: 'flex',
-          height: '100%',
-          position: 'relative'
-        }}
-      >
-        {/* <button onClick={this.evalCode}>运行</button> */}
+  return (
+    <Hero
+      left={
+        <div className="lg:-mr-18">
+          <AnimatePresence>
+            <motion.div
+              className="relative z-10 rounded-lg shadow-xl text-slate-900 mx-auto sm:w-[23.4375rem] dark:text-slate-300"
+              transition={{
+                duration: 0.5
+              }}
+            >
+              <motion.div
+                className={clsx('bg-white rounded-lg overflow-hidden ring-1  ring-slate-900/5 dark:bg-slate-800 dark:highlight-white/5 dark:ring-0', {
+                  'text-center': court >= 7 && court < 14,
+                  'text-left': court >= 14,
+                  'md:flex': court >= 8
+                })}
+                transition={{
+                  duration: 1
+                }}
+                animate={{
+                  ...(court >= 0 ? { padding: '32px' } : {}),
+                  ...(court >= 7 && extend ? { width: '600px' } : {})
+                }}
+              >
+                <motion.div
+                  transition={{ duration: 0.5 }}
+                  className={clsx('relative z-10 overflow-hidden flex-none')}
+                  animate={{
+                    ...(court >= 10 ? { margin: '-32px', marginRight: '32px' } : '')
+                  }}
+                >
+                  <motion.img
+                    transition={{ duration: 0.5 }}
+                    className={clsx('w-24 h-24')}
+                    src="http://localhost:3000/wolf.jpg"
+                    decoding="async"
+                    animate={{
+                      ...(court >= 2 && court <= 7 ? { x: 110, y: 0 } : { x: 0, y: 0 }),
+                      ...(court >= 1 && court <= 11 ? { borderRadius: '50%' } : {}),
+                      ...(court >= 12 ? { width: '192px' } : ''),
+                      ...(court >= 13 ? { height: '100%' } : '')
+                    }}
+                  />
+                </motion.div>
+                <motion.div>
+                  <motion.div
+                    className="mb-4"
+                    transition={{ duration: 0.5 }}
+                    animate={{
+                      ...(court >= 3 ? { fontWeight: 500, padding: '1px' } : {}),
 
-        {/* <button onClick={this.handleCopy}>复制代码</button> */}
-        <div>{codeComponent ? React.createElement(codeComponent) : null}</div>
+                      ...(court >= 7 && court < 14
+                        ? {
+                            x: ['-10%', '0%']
+                          }
+                        : {}),
+                      ...(court >= 14 ? { x: ['10%', '0%'] } : {})
+                    }}
+                  >
+                    “Tailwind CSS is the only framework that I've seen scale on large teams. It’s easy to customize, adapts to any design, and the build size is tiny.”
+                  </motion.div>
+                  <motion.div
+                    transition={{ duration: 0.5 }}
+                    animate={{
+                      ...(court >= 4 ? { fontWeight: 500 } : {}),
+                      ...(court >= 7 && court < 14
+                        ? {
+                            x: ['-20%', '0%']
+                          }
+                        : {}),
+                      ...(court >= 14 ? { x: ['20%', '0%'] } : {})
+                    }}
+                    className={{
+                      'text-center': court >= 7 && court < 14,
+                      'text-left': court >= 14
+                    }}
+                  >
+                    <motion.p className={clsx('transition-colors duration-500', court >= 5 ? 'text-sky-500 dark:text-sky-400' : 'text-black dark:text-slate-300')}>Sarah Dayan</motion.p>
+                    <motion.p initial={false} className={clsx('transition-colors duration-500', court >= 6 ? 'text-slate-700 dark:text-slate-500' : 'text-black dark:text-slate-300')}>
+                      Staff Engineer, Algolia {court}
+                    </motion.p>
+                  </motion.div>
+                </motion.div>
+              </motion.div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      }
+      right={
         <CodeMirror
           style={{ width: '50%', marginRight: '10px' }}
           value={code}
@@ -122,10 +226,10 @@ export default class CodeMirrorDemo extends Component {
             tabSize: 2
           }}
           onChange={editor => {
-            this.setState({ code: editor })
+            setCode(editor)
           }}
         />
-      </div>
-    )
-  }
+      }
+    />
+  )
 }
