@@ -3,7 +3,7 @@ import CodeMirror from '@uiw/react-codemirror'
 import clsx from 'clsx'
 import { javascript } from '@codemirror/lang-javascript'
 import { EditorState } from '@codemirror/state'
-import { dracula } from '@uiw/codemirror-theme-dracula'
+import { atomone } from '@uiw/codemirror-theme-atomone'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export function Hero({ left, right }) {
@@ -214,7 +214,7 @@ export default function CodeMirrorDemo() {
         <CodeMirror
           style={{ width: '50%', marginRight: '10px' }}
           value={code}
-          theme={dracula}
+          theme={atomone}
           extensions={[javascript({ jsx: true }), EditorState.readOnly.of(true)]}
           options={{
             readOnly: true, // 直接禁止用户输入

@@ -1,11 +1,8 @@
-import CodeMirrorDemo from './components/CodeMirrorDemo'
+// import CodeMirrorDemo from './components/CodeMirrorDemo'
+import Base from './layout/Base.jsx'
 
 function App() {
-  return (
-    <div style={{ height: '100vh', marginTop: '200px' }}>
-      <CodeMirrorDemo />
-    </div>
-  )
+  return <Base />
 }
 
 export default App
